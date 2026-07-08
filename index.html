@@ -488,7 +488,7 @@ function App() {
         console.error('Errore lettura indirizzi', err);
       });
     return unsub;
-  }, [user]);
+  }, [user, registrationStatus]);
 
   function isStandaloneMode() {
     var isStandaloneDisplay = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
