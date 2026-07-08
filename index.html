@@ -257,6 +257,30 @@ function LoginScreen(props) {
   );
 }
 
+function PendingScreen(props) {
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <h1>Richiesta inviata</h1>
+        <p>Il locale deve ancora approvare la tua registrazione. Riprova più tardi, oppure chiedi al banco.</p>
+        <button className="btn-secondary" onClick={props.onLogout}>Esci</button>
+      </div>
+    </div>
+  );
+}
+
+function RejectedScreen(props) {
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <h1>Accesso non approvato</h1>
+        <p>La tua registrazione non è stata accettata. Per informazioni rivolgiti al banco.</p>
+        <button className="btn-secondary" onClick={props.onLogout}>Esci</button>
+      </div>
+    </div>
+  );
+}
+
 function AddressForm(props) {
   var viaState = React.useState('');
   var via = viaState[0];
@@ -358,6 +382,14 @@ function App() {
   var showForm = showFormState[0];
   var setShowForm = showFormState[1];
 
+  var registrationStatusState = React.useState(null);
+  var registrationStatus = registrationStatusState[0];
+  var setRegistrationStatus = registrationStatusState[1];
+
+  var registrationLoadingState = React.useState(true);
+  var registrationLoading = registrationLoadingState[0];
+  var setRegistrationLoading = registrationLoadingState[1];
+
   React.useEffect(function () {
     var unsub = auth.onAuthStateChanged(function (u) {
       setUser(u);
@@ -368,6 +400,35 @@ function App() {
 
   React.useEffect(function () {
     if (!user) {
+      setRegistrationStatus(null);
+      setRegistrationLoading(false);
+      return;
+    }
+    setRegistrationLoading(true);
+    var registryRef = db.collection('bar_registry').doc(user.uid);
+    var unsub = registryRef.onSnapshot(function (docSnap) {
+      if (docSnap.exists) {
+        setRegistrationStatus(docSnap.data().stato);
+        setRegistrationLoading(false);
+      } else {
+        registryRef.set({
+          nome: user.displayName || '',
+          email: user.email || '',
+          stato: 'in_attesa',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function (err) {
+          console.error('Errore creazione richiesta registrazione', err);
+        });
+      }
+    }, function (err) {
+      console.error('Errore lettura registrazione', err);
+      setRegistrationLoading(false);
+    });
+    return unsub;
+  }, [user]);
+
+  React.useEffect(function () {
+    if (!user || registrationStatus !== 'approvato') {
       setAddresses([]);
       return;
     }
@@ -431,6 +492,18 @@ function App() {
 
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  if (registrationLoading) {
+    return <div className="loading-screen">Verifica registrazione...</div>;
+  }
+
+  if (registrationStatus === 'in_attesa') {
+    return <PendingScreen onLogout={handleLogout} />;
+  }
+
+  if (registrationStatus === 'rifiutato') {
+    return <RejectedScreen onLogout={handleLogout} />;
   }
 
   return (

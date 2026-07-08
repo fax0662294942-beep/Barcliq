@@ -1,12 +1,23 @@
 Regole Firestore da aggiungere/verificare nel progetto viaggi-camper
-per far funzionare Bar CliQ v0.1.0 (collezione bar_addresses).
+per far funzionare Bar CliQ v0.2.0 (collezioni bar_registry e bar_addresses).
 
 match /databases/{database}/documents {
 
+  match /bar_registry/{uid} {
+    // il cliente crea la propria richiesta di registrazione e la legge,
+    // ma non puo' modificarne lo stato (solo lo staff, dalla Bar Admin, potra' farlo)
+    allow read: if request.auth != null && request.auth.uid == uid;
+    allow create: if request.auth != null && request.auth.uid == uid
+                  && request.resource.data.stato == 'in_attesa';
+    allow update, delete: if false; // riservato allo staff via Bar Admin (regola dedicata da aggiungere quando costruiremo quella app)
+  }
+
   match /bar_addresses/{addressId} {
     allow read: if request.auth != null && request.auth.uid == resource.data.uid;
-    allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    // update/delete: il cliente puo' cancellare solo i propri indirizzi rifiutati,
+    allow create: if request.auth != null
+                  && request.auth.uid == request.resource.data.uid
+                  && get(/databases/$(database)/documents/bar_registry/$(request.auth.uid)).data.stato == 'approvato';
+    // il cliente puo' cancellare solo i propri indirizzi (in genere quelli rifiutati);
     // la modifica dello stato (in_attesa/confermato/rifiutato) sara' riservata
     // all'app Bar Admin (staff autorizzato), da definire quando costruiremo quella parte.
     allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
@@ -14,7 +25,12 @@ match /databases/{database}/documents {
 
 }
 
-Nota: per ora chiunque sia autenticato con Google puo' scrivere in bar_addresses
-solo i propri documenti (uid coincidente). La possibilita' di CONFERMARE o RIFIUTARE
-un indirizzo (cambiare il campo stato) sara' riservata allo staff quando costruiremo
-la app Bar Admin con il pattern di approvazione (bar_registry + bar_config/admins).
+Nota: la creazione di un indirizzo ora richiede che bar_registry/{uid}.stato sia
+'approvato' - quindi finche' l'amministratore non approva la registrazione, il
+cliente non puo' inserire indirizzi (anche se per interfaccia non li vede comunque,
+questa regola e' la barriera di sicurezza lato server).
+
+La possibilita' di APPROVARE/RIFIUTARE una registrazione o un indirizzo sara'
+riservata allo staff quando costruiremo la app Bar Admin con il pattern di
+approvazione (bar_config/admins che elenca gli uid autorizzati a scrivere
+su bar_registry e sullo stato di bar_addresses).
