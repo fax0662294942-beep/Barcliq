@@ -490,11 +490,24 @@ function App() {
     return unsub;
   }, [user]);
 
+  function isStandaloneMode() {
+    var isStandaloneDisplay = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    var isIosStandalone = window.navigator.standalone === true;
+    return isStandaloneDisplay || isIosStandalone;
+  }
+
   function handleLogin() {
     setAuthError(null);
     var provider = new firebase.auth.GoogleAuthProvider();
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function () {
-      auth.signInWithRedirect(provider);
+      if (isStandaloneMode()) {
+        auth.signInWithPopup(provider).catch(function (err) {
+          console.error('Errore popup Google Sign-In', err);
+          setAuthError('Accesso non riuscito (' + err.code + '). Riprova.');
+        });
+      } else {
+        auth.signInWithRedirect(provider);
+      }
     }).catch(function (err) {
       console.error('Errore impostazione persistenza', err);
       setAuthError('Errore avvio accesso (' + err.code + ').');
