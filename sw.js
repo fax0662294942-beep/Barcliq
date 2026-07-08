@@ -1,4 +1,4 @@
-var CACHE_NAME = 'barcliq-v020';
+var CACHE_NAME = 'barcliq-v022';
 var FILES_TO_CACHE = [
   './index.html',
   './manifest.json',

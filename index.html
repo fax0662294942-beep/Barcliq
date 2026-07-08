@@ -63,6 +63,15 @@
     cursor: pointer;
   }
   .btn-google:active { background: #0F6E56; }
+  .login-error {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #FCEBEB;
+    color: #791F1F;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: left;
+  }
 
   .app-header {
     background: #085041;
@@ -245,6 +254,8 @@ firebase.initializeApp(firebaseConfig);
 var auth = firebase.auth();
 var db = firebase.firestore();
 
+var BOOTSTRAP_ADMIN_EMAILS = ['franco.decesare@gmail.com'];
+
 function LoginScreen(props) {
   return (
     <div className="login-screen">
@@ -252,6 +263,7 @@ function LoginScreen(props) {
         <h1>Bar CliQ</h1>
         <p>Accedi per vedere il menu e ordinare</p>
         <button className="btn-google" onClick={props.onLogin}>Accedi con Google</button>
+        {props.authError ? <div className="login-error">{props.authError}</div> : null}
       </div>
     </div>
   );
@@ -390,6 +402,21 @@ function App() {
   var registrationLoading = registrationLoadingState[0];
   var setRegistrationLoading = registrationLoadingState[1];
 
+  var authErrorState = React.useState(null);
+  var authError = authErrorState[0];
+  var setAuthError = authErrorState[1];
+
+  React.useEffect(function () {
+    auth.getRedirectResult().then(function (result) {
+      if (result && result.user) {
+        setAuthError(null);
+      }
+    }).catch(function (err) {
+      console.error('Errore redirect Google Sign-In', err);
+      setAuthError('Accesso non riuscito (' + err.code + '). Riprova, o segnala questo codice.');
+    });
+  }, []);
+
   React.useEffect(function () {
     var unsub = auth.onAuthStateChanged(function (u) {
       setUser(u);
@@ -411,11 +438,21 @@ function App() {
         setRegistrationStatus(docSnap.data().stato);
         setRegistrationLoading(false);
       } else {
+        var isBootstrapAdmin = BOOTSTRAP_ADMIN_EMAILS.indexOf(user.email) !== -1;
         registryRef.set({
           nome: user.displayName || '',
           email: user.email || '',
-          stato: 'in_attesa',
+          stato: isBootstrapAdmin ? 'approvato' : 'in_attesa',
+          ruolo: isBootstrapAdmin ? 'admin' : 'cliente',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+          if (isBootstrapAdmin) {
+            db.collection('bar_config').doc('admins').set({
+              uids: firebase.firestore.FieldValue.arrayUnion(user.uid)
+            }, { merge: true }).catch(function (err) {
+              console.error('Errore bootstrap admin config', err);
+            });
+          }
         }).catch(function (err) {
           console.error('Errore creazione richiesta registrazione', err);
         });
@@ -454,8 +491,14 @@ function App() {
   }, [user]);
 
   function handleLogin() {
+    setAuthError(null);
     var provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithRedirect(provider);
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function () {
+      auth.signInWithRedirect(provider);
+    }).catch(function (err) {
+      console.error('Errore impostazione persistenza', err);
+      setAuthError('Errore avvio accesso (' + err.code + ').');
+    });
   }
 
   function handleLogout() {
@@ -491,7 +534,7 @@ function App() {
   }
 
   if (!user) {
-    return <LoginScreen onLogin={handleLogin} />;
+    return <LoginScreen onLogin={handleLogin} authError={authError} />;
   }
 
   if (registrationLoading) {

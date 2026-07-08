@@ -4,12 +4,19 @@ per far funzionare Bar CliQ v0.2.0 (collezioni bar_registry e bar_addresses).
 match /databases/{database}/documents {
 
   match /bar_registry/{uid} {
-    // il cliente crea la propria richiesta di registrazione e la legge,
-    // ma non puo' modificarne lo stato (solo lo staff, dalla Bar Admin, potra' farlo)
     allow read: if request.auth != null && request.auth.uid == uid;
     allow create: if request.auth != null && request.auth.uid == uid
-                  && request.resource.data.stato == 'in_attesa';
+                  && (
+                    request.resource.data.stato == 'in_attesa'
+                    || (request.resource.data.stato == 'approvato'
+                        && request.auth.token.email == 'franco.decesare@gmail.com')
+                  );
     allow update, delete: if false; // riservato allo staff via Bar Admin (regola dedicata da aggiungere quando costruiremo quella app)
+  }
+
+  match /bar_config/admins {
+    allow read: if request.auth != null;
+    allow write: if request.auth != null && request.auth.token.email == 'franco.decesare@gmail.com';
   }
 
   match /bar_addresses/{addressId} {
