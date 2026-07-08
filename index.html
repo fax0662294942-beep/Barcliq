@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bar CliQ - Ordina</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#1D9E75"/>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F4F5F3;
+    color: #1E1E1C;
+  }
+  .loading-screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5F5E5A;
+  }
+  .login-screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #1D9E75;
+  }
+  .login-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px 28px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  .login-card h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    color: #085041;
+  }
+  .login-card p {
+    margin: 0 0 28px;
+    color: #5F5E5A;
+    font-size: 15px;
+  }
+  .btn-google {
+    width: 100%;
+    padding: 14px;
+    background: #1D9E75;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-google:active { background: #0F6E56; }
+
+  .app-header {
+    background: #085041;
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-title { font-size: 18px; font-weight: 700; }
+  .header-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .btn-link {
+    background: none;
+    border: none;
+    color: #9FE1CB;
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .app-main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+  .section-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .section-title-row h2 {
+    margin: 0;
+    font-size: 19px;
+  }
+
+  .btn-primary {
+    background: #1D9E75;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary:active { background: #0F6E56; }
+  .btn-secondary {
+    background: #E1E0D8;
+    color: #444441;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn-delete {
+    background: none;
+    border: 1px solid #F09595;
+    color: #A32D2D;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  .address-form {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .address-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid #D3D1C7;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .empty-state {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    color: #5F5E5A;
+    font-size: 14px;
+  }
+
+  .address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .address-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .address-line { font-size: 15px; font-weight: 600; }
+  .address-line-sub { font-size: 14px; color: #5F5E5A; margin-top: 2px; }
+  .address-note { font-size: 13px; color: #888780; margin-top: 4px; }
+  .address-motivo { font-size: 13px; color: #A32D2D; margin-top: 6px; }
+  .address-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .status-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .status-pending { background: #FAC775; color: #633806; }
+  .status-confirmed { background: #97C459; color: #27500A; }
+  .status-rejected { background: #F09595; color: #791F1F; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  if (screen.orientation && screen.orientation.unlock) {
+    try { screen.orientation.unlock(); } catch (e) {}
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+    });
+  }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script type="text/babel" data-presets="env,react">
+/* @jsxRuntime classic */
+
+var firebaseConfig = {
+  apiKey: "AIzaSyDue3aMzi-8-zflMvlgdGp1TzzId1CZNaI",
+  authDomain: "viaggi-camper.firebaseapp.com",
+  projectId: "viaggi-camper",
+  storageBucket: "viaggi-camper.firebasestorage.app",
+  messagingSenderId: "172431561795",
+  appId: "1:172431561795:web:ae6ef3e9c2bbdfeb2d70f6"
+};
+
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+function LoginScreen(props) {
+  return (
+    <div className="login-screen">
+      <div className="login-card">
+        <h1>Bar CliQ</h1>
+        <p>Accedi per vedere il menu e ordinare</p>
+        <button className="btn-google" onClick={props.onLogin}>Accedi con Google</button>
+      </div>
+    </div>
+  );
+}
+
+function AddressForm(props) {
+  var viaState = React.useState('');
+  var via = viaState[0];
+  var setVia = viaState[1];
+
+  var cittaState = React.useState('');
+  var citta = cittaState[0];
+  var setCitta = cittaState[1];
+
+  var noteState = React.useState('');
+  var note = noteState[0];
+  var setNote = noteState[1];
+
+  function handleSubmit() {
+    if (!via.trim() || !citta.trim()) {
+      alert('Inserisci almeno via e citta');
+      return;
+    }
+    props.onSave({ via: via.trim(), citta: citta.trim(), note: note.trim() });
+    setVia('');
+    setCitta('');
+    setNote('');
+  }
+
+  return (
+    <div className="address-form">
+      <input
+        type="text"
+        placeholder="Via e civico"
+        value={via}
+        onChange={function (e) { setVia(e.target.value); }}
+      />
+      <input
+        type="text"
+        placeholder="Citta"
+        value={citta}
+        onChange={function (e) { setCitta(e.target.value); }}
+      />
+      <input
+        type="text"
+        placeholder="Note (citofono, piano, scala...)"
+        value={note}
+        onChange={function (e) { setNote(e.target.value); }}
+      />
+      <div className="form-actions">
+        <button className="btn-secondary" onClick={props.onCancel}>Annulla</button>
+        <button className="btn-primary" onClick={handleSubmit}>Salva indirizzo</button>
+      </div>
+    </div>
+  );
+}
+
+function AddressCard(props) {
+  var addr = props.address;
+  var statusLabel = 'In attesa di conferma';
+  var statusClass = 'status-pending';
+  if (addr.stato === 'confermato') {
+    statusLabel = 'Confermato';
+    statusClass = 'status-confirmed';
+  } else if (addr.stato === 'rifiutato') {
+    statusLabel = 'Rifiutato';
+    statusClass = 'status-rejected';
+  }
+
+  return (
+    <div className="address-card">
+      <div className="address-info">
+        <div className="address-line">{addr.via}</div>
+        <div className="address-line-sub">{addr.citta}</div>
+        {addr.note ? <div className="address-note">{addr.note}</div> : null}
+        {addr.stato === 'rifiutato' && addr.motivoRifiuto ? (
+          <div className="address-motivo">Motivo: {addr.motivoRifiuto}</div>
+        ) : null}
+      </div>
+      <div className="address-side">
+        <span className={'status-badge ' + statusClass}>{statusLabel}</span>
+        {addr.stato === 'rifiutato' ? (
+          <button className="btn-delete" onClick={function () { props.onDelete(addr.id); }}>Elimina</button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  var userState = React.useState(null);
+  var user = userState[0];
+  var setUser = userState[1];
+
+  var addressesState = React.useState([]);
+  var addresses = addressesState[0];
+  var setAddresses = addressesState[1];
+
+  var loadingState = React.useState(true);
+  var loading = loadingState[0];
+  var setLoading = loadingState[1];
+
+  var showFormState = React.useState(false);
+  var showForm = showFormState[0];
+  var setShowForm = showFormState[1];
+
+  React.useEffect(function () {
+    var unsub = auth.onAuthStateChanged(function (u) {
+      setUser(u);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  React.useEffect(function () {
+    if (!user) {
+      setAddresses([]);
+      return;
+    }
+    var unsub = db.collection('bar_addresses')
+      .where('uid', '==', user.uid)
+      .onSnapshot(function (snapshot) {
+        var list = [];
+        snapshot.forEach(function (doc) {
+          var data = doc.data();
+          data.id = doc.id;
+          list.push(data);
+        });
+        list.sort(function (a, b) {
+          var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+          var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+        setAddresses(list);
+      }, function (err) {
+        console.error('Errore lettura indirizzi', err);
+      });
+    return unsub;
+  }, [user]);
+
+  function handleLogin() {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithRedirect(provider);
+  }
+
+  function handleLogout() {
+    auth.signOut();
+  }
+
+  function handleSaveAddress(data) {
+    db.collection('bar_addresses').add({
+      uid: user.uid,
+      via: data.via,
+      citta: data.citta,
+      note: data.note,
+      stato: 'in_attesa',
+      motivoRifiuto: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function () {
+      setShowForm(false);
+    }).catch(function (err) {
+      console.error('Errore salvataggio indirizzo', err);
+      alert('Errore nel salvataggio, riprova');
+    });
+  }
+
+  function handleDeleteAddress(id) {
+    if (!window.confirm('Eliminare questo indirizzo?')) return;
+    db.collection('bar_addresses').doc(id).delete().catch(function (err) {
+      console.error('Errore eliminazione indirizzo', err);
+    });
+  }
+
+  if (loading) {
+    return <div className="loading-screen">Caricamento...</div>;
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <div className="header-title">Bar CliQ</div>
+        <div className="header-user">
+          <span>{user.displayName}</span>
+          <button className="btn-link" onClick={handleLogout}>Esci</button>
+        </div>
+      </header>
+
+      <main className="app-main">
+        <div className="section-title-row">
+          <h2>I tuoi indirizzi</h2>
+          {!showForm ? (
+            <button className="btn-primary" onClick={function () { setShowForm(true); }}>+ Aggiungi indirizzo</button>
+          ) : null}
+        </div>
+
+        {showForm ? (
+          <AddressForm onSave={handleSaveAddress} onCancel={function () { setShowForm(false); }} />
+        ) : null}
+
+        {addresses.length === 0 && !showForm ? (
+          <div className="empty-state">Nessun indirizzo salvato. Aggiungine uno per ordinare a domicilio, oppure scegli il ritiro al banco al momento dell'ordine.</div>
+        ) : null}
+
+        <div className="address-list">
+          {addresses.map(function (addr) {
+            return <AddressCard key={addr.id} address={addr} onDelete={handleDeleteAddress} />;
+          })}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+var root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

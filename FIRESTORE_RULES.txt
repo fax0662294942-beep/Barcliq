@@ -1,0 +1,20 @@
+Regole Firestore da aggiungere/verificare nel progetto viaggi-camper
+per far funzionare Bar CliQ v0.1.0 (collezione bar_addresses).
+
+match /databases/{database}/documents {
+
+  match /bar_addresses/{addressId} {
+    allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+    allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    // update/delete: il cliente puo' cancellare solo i propri indirizzi rifiutati,
+    // la modifica dello stato (in_attesa/confermato/rifiutato) sara' riservata
+    // all'app Bar Admin (staff autorizzato), da definire quando costruiremo quella parte.
+    allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+  }
+
+}
+
+Nota: per ora chiunque sia autenticato con Google puo' scrivere in bar_addresses
+solo i propri documenti (uid coincidente). La possibilita' di CONFERMARE o RIFIUTARE
+un indirizzo (cambiare il campo stato) sara' riservata allo staff quando costruiremo
+la app Bar Admin con il pattern di approvazione (bar_registry + bar_config/admins).
