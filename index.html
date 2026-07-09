@@ -521,6 +521,8 @@ function App() {
   function handleSaveAddress(data) {
     db.collection('bar_addresses').add({
       uid: user.uid,
+      clienteNome: user.displayName || '',
+      clienteEmail: user.email || '',
       via: data.via,
       citta: data.citta,
       note: data.note,
